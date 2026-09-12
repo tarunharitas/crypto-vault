@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoVault — Zero-Knowledge Local Credential Vault & File Encryption</title>
+  <meta name="description" content="A next-generation local password vault and authenticated file encryption engine built with Argon2id and AES-256-GCM.">
+  
+  <style>
+    /* ================================================================
+       CRYPTOVAULT PRODUCT EDITION — MONOCHROME, QUIET, PRECISE
+       ================================================================ */
+    :root {
+      --bg-dark: #f5f5f3;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #f0f0ee;
+      --bg-surface-glass: rgba(255, 255, 255, 0.85);
+      
+      --border-subtle: rgba(16, 16, 16, 0.08);
+      --border-glow: rgba(16, 16, 16, 0.16);
+      --border-cyan: rgba(16, 16, 16, 0.16);
+      
+      --accent-black: #111111;
+      --accent-black-hover: #2b2b2b;
+      --accent-emerald: #19704b;
+      --accent-emerald-dim: rgba(25, 112, 75, 0.10);
+      --accent-rose: #b42318;
+      --accent-rose-dim: rgba(180, 35, 24, 0.10);
+      
+      --text-white: #111111;
+      --text-primary: #151515;
+      --text-secondary: #626262;
+      --text-muted: #8a8a86;
+      --text-subtle: #a1a19c;
+      
+      --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-code: "SFMono-Regular", Consolas, "JetBrains Mono", "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      color-scheme: light;
+      background: var(--bg-dark);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      line-height: 1.6;
+      letter-spacing: -0.012em;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 6%, #ffffff 0, rgba(255, 255, 255, 0.8) 18rem, transparent 46rem);
+    }
+
+    /* SCROLL PROGRESS BAR */
+    .page-progress {
+      position: fixed;
+      inset: 0 auto auto 0;
+      width: 0%;
+      height: 2.5px;
+      background: var(--accent-black);
+      z-index: 1000;
+      transition: width 0.1s ease-out;
+    }
+
+    .wrapper {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      position: sticky;
+      top: 18px;
+      z-index: 100;
+      margin-bottom: 20px;
+    }
+
+    .nav-container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px 10px 18px;
+      background: var(--bg-surface-glass);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 9999px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(24px) saturate(150%);
+      -webkit-backdrop-filter: blur(24px) saturate(150%);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-white);
+      font-weight: 700;
+      font-size: 0.98rem;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent-black);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #676767;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-white);
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: var(--accent-black);
+      color: #ffffff !important;
+      font-size: 0.84rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      text-decoration: none;
+      border: 1px solid var(--accent-black);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .nav-cta:hover {
+      background: var(--accent-black-hover);
+      transform: translateY(-1px);
+    }
+
+    /* HERO */
+    .hero {
+      padding: 100px 0 60px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 15px;
+      background: #ebebe8;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      border-radius: 9999px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #5d5d59;
+      margin-bottom: 24px;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    .hero h1 {
+      max-width: 1000px;
+      margin: 10px auto 20px;
+      font-size: clamp(3.2rem, 7.5vw, 6.8rem);
+      font-weight: 720;
+      line-height: 0.92;
+      letter-spacing: -0.07em;
+      color: var(--text-white);
+    }
+
+    .gradient-headline {
+      display: block;
+      color: var(--text-subtle);
+    }
+
+    .hero-sub {
+      max-width: 640px;
+      margin: 0 auto 36px;
+      color: #656561;
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+      line-height: 1.55;
+      letter-spacing: -0.025em;
+    }
+
+    .hero-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .btn-main-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      background: var(--accent-black);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.92rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      border: 1px solid var(--accent-black);
+      transition: all 0.2s;
+    }
+
+    .btn-main-download:hover {
+      background: #2b2b2b;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px;
+      background: transparent;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      color: var(--text-white);
+      font-weight: 600;
+      font-size: 0.92rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.28);
+    }
+
+    .download-meta {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-family: var(--font-code);
+    }
+
+    /* MOCKUP SHOWCASE */
+    .mockup-wrapper {
+      margin: 40px auto 90px;
+      background: #0b0b0c;
+      border: 1px solid #262626;
+      border-radius: 28px;
+      box-shadow: 0 50px 100px -45px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      transform: perspective(1600px) rotateX(1.2deg);
+      transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.65s;
+    }
+
+    .mockup-wrapper:hover {
+      transform: perspective(1600px) rotateX(0) translateY(-5px);
+      box-shadow: 0 65px 120px -50px rgba(0, 0, 0, 0.55);
+    }
+
+    .mockup-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: #151516;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mockup-dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .mockup-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-1 { background: #ef4444; }
+    .dot-2 { background: #f59e0b; }
+    .dot-3 { background: #10b981; }
+
+    .mockup-title {
+      font-family: var(--font-code);
+      font-size: 0.74rem;
+      color: #888888;
+    }
+
+    .mockup-content {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 380px;
+    }
+
+    .mockup-sidebar {
+      background: #111112;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .mockup-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #949498;
+      margin-bottom: 4px;
+    }
+
+    .mockup-nav-item.active {
+      background: #ffffff;
+      color: #111111;
+    }
+
+    .mockup-main-view {
+      padding: 24px;
+      background: #0c0c0d;
+    }
+
+    .mockup-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .mockup-item-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 18px;
+      background: #151516;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .mockup-item-card:hover {
+      background: #1c1c1e;
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .mockup-item-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mockup-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38bdf8;
+    }
+
+    .mockup-btn-copy {
+      padding: 6px 14px;
+      font-size: 0.76rem;
+      font-family: var(--font-code);
+      font-weight: 600;
+      background: #2a2a2c !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border-radius: 6px;
+      color: #f4f4f4 !important;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mockup-btn-copy.copied {
+      background: rgba(25, 112, 75, 0.4) !important;
+      color: #34d399 !important;
+      border-color: rgba(52, 211, 153, 0.4) !important;
+    }
+
+    /* BENTO FEATURES */
+    #features {
+      padding-top: 100px;
+    }
+
+    .section-head {
+      max-width: 760px;
+      margin: 0 auto 48px;
+      text-align: center;
+    }
+
+    .section-eyebrow {
+      color: #73736f;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      color: var(--text-white);
+      font-size: clamp(2.4rem, 5vw, 4.2rem);
+      line-height: 0.98;
+      letter-spacing: -0.06em;
+      font-weight: 720;
+      margin-bottom: 14px;
+    }
+
+    .section-desc {
+      color: #70706c;
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 120px;
+    }
+
+    .bento-card {
+      min-height: 290px;
+      padding: 34px;
+      border-radius: 28px;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s, border-color 0.5s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .bento-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 0, 0, 0.13);
+      box-shadow: 0 25px 60px -35px rgba(0, 0, 0, 0.28);
+    }
+
+    .bento-card.col-2 {
+      grid-column: span 2;
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #f0f0ed;
+      color: var(--accent-black);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .bento-card h3 {
+      color: #171717;
+      letter-spacing: -0.035em;
+      font-size: 1.28rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .bento-card p {
+      color: #70706c;
+      line-height: 1.6;
+      font-size: 0.94rem;
+      margin-bottom: 20px;
+    }
+
+    .metric-pill-box {
+      background: #f4f4f1;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      color: #50504d;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* SIMULATOR DECK */
+    #simulator {
+      padding-top: 100px;
+    }
+
+    .playground-box {
+      padding: 40px;
+      border-radius: 28px;
+      background: #111112;
+      border: 1px solid #242426;
+      box-shadow: 0 45px 90px -50px rgba(0, 0, 0, 0.55);
+      color: #f5f5f5;
+      margin-bottom: 120px;
+    }
+
+    .play-tabs {
+      display: flex;
+      gap: 6px;
+      background: #1a1a1c;
+      border: 1px solid #2a2a2d;
+      border-radius: 9999px;
+      padding: 5px;
+      margin-bottom: 28px;
+      max-width: fit-content;
+    }
+
+    .play-tab-btn {
+      padding: 9px 18px;
+      background: transparent;
+      border: none;
+      border-radius: 9999px;
+      color: #949498;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .play-tab-btn.active {
+      background: #f5f5f3 !important;
+      color: #111111 !important;
+    }
+
+    .play-pane {
+      display: none;
+    }
+
+    .play-pane.active {
+      display: block;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #a3a3a0;
+      margin-bottom: 8px;
+    }
+
+    .input-box {
+      width: 100%;
+      padding: 12px 16px;
+      background: #1b1b1d;
+      border: 1px solid #303033;
+      border-radius: 12px;
+      color: #ffffff;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-box:focus {
+      border-color: #777777;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+    }
+
+    .action-button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .btn-exec {
+      padding: 11px 22px;
+      background: #f5f5f3;
+      color: #111111;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-exec:hover {
+      background: #ffffff;
+    }
+
+    .btn-attack {
+      padding: 11px 20px;
+      background: rgba(180, 35, 24, 0.16);
+      border: 1px solid rgba(180, 35, 24, 0.35);
+      color: #fca5a5;
+      font-weight: 600;
+      font-size: 0.88rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-attack:hover:not(:disabled) {
+      background: rgba(180, 35, 24, 0.3);
+      color: #ffffff;
+    }
+
+    .btn-attack:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-verify {
+      padding: 11px 20px;
+      background: rgba(25, 112, 75, 0.18);
+      border: 1px solid rgba(25, 112, 75, 0.4);
+      color: #6ee7b7;
+      font-weight: 600;
+      font-size: 0.88rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-verify:hover:not(:disabled) {
+      background: rgba(25, 112, 75, 0.32);
+      color: #ffffff;
+    }
+
+    .btn-verify:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .console-box {
+      background: #09090a;
+      border: 1px solid #29292b;
+      border-radius: 16px;
+      padding: 20px;
+      font-family: var(--font-code);
+      font-size: 0.82rem;
+      color: #949498;
+    }
+
+    .console-row {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      gap: 16px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .console-row:last-child {
+      border-bottom: none;
+    }
+
+    .console-key {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .console-val {
+      color: #f1f5f9;
+      word-break: break-all;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 50px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #777777;
+      font-size: 0.86rem;
+    }
+
+    footer a {
+      color: #555555;
+      text-decoration: none;
+      margin-left: 20px;
+      transition: color 0.2s;
+    }
+
+    footer a:hover {
+      color: #111111;
+    }
+
+    /* REVEAL ANIMATIONS */
+    .reveal-product {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.75, 0.2, 1);
+    }
+
+    .reveal-product.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    @media (max-width: 860px) {
+      .wrapper { padding: 0 18px; }
+      .nav-links { display: none; }
+      .hero { padding-top: 70px; }
+      .hero h1 { font-size: clamp(3rem, 14vw, 4.8rem); }
+      .mockup-wrapper { border-radius: 18px; transform: none; }
+      .bento-grid { grid-template-columns: 1fr; }
+      .bento-card.col-2 { grid-column: span 1; }
+      .form-row { grid-template-columns: 1fr; }
+      .mockup-content { grid-template-columns: 1fr; }
+      .mockup-sidebar { display: none; }
+      .console-row { grid-template-columns: 1fr; gap: 4px; }
+      .playground-box { padding: 24px; border-radius: 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation: none !important;
+        transition: none !important;
+      }
+      .reveal-product { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCROLL PROGRESS INDICATOR -->
+  <div class="page-progress" aria-hidden="true"></div>
+
+  <div class="wrapper">
+
+    <!-- FLOATING CAPSULE NAVBAR -->
+    <header class="navbar">
+      <nav class="nav-container">
+        <a href="#" class="brand">
+          <div class="brand-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+              <path d="M12 11v4"/>
+            </svg>
+          </div>
+          <span>CryptoVault</span>
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="#features">Architecture</a></li>
+          <li><a href="#simulator">Live Simulator</a></li>
+          <li><a href="https://github.com/tarunharitas/crypto-vault" target="_blank" rel="noopener">GitHub</a></li>
+        </ul>
+
+        <a href="CryptoVault.exe" download="CryptoVault.exe" class="nav-cta">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download .exe</span>
+        </a>
+      </nav>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        <span>v2.0 Release &bull; Auto Extension Restoration &bull; Zero Cloud &bull; Offline</span>
+      </div>
+
+      <h1>
+        Next-Gen Local Vault.<br>
+        <span class="gradient-headline">Zero Cloud. Zero Trace.</span>
+      </h1>
+
+      <p class="hero-sub">
+        Cryptographically hardened credential management, authenticated file encryption, and streaming HMAC integrity. Designed as a local-security portfolio project; this public sandbox is educational only.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="CryptoVault.exe" download="CryptoVault.exe" class="btn-main-download">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+          </svg>
+          <span>Download CryptoVault.exe</span>
+        </a>
+
+        <a href="#simulator" class="btn-outline">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Try Web Simulator</span>
+        </a>
+      </div>
+
+      <div class="download-meta">
+        Windows 64-bit Standalone Executable &bull; Size: 20 MB &bull; Portable Single File
+      </div>
+      <div style="margin-top: 12px;">
+        <span style="display: inline-flex; align-items: center; gap: 8px; background: #18181b; color: #a1a1aa; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; padding: 6px 14px; border-radius: 9999px; border: 1px solid #27272a;">
+          <span style="color: #71717a;">winget</span> <span style="color: #e4e4e7;">install tarunharitas.CryptoVault</span>
+        </span>
+      </div>
+      <div class="download-tip" style="margin-top: 12px; font-size: 0.8rem; color: #71717a; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.4;">
+        💡 <strong>First time running on Windows?</strong> If SmartScreen appears: Right-click <code>CryptoVault.exe</code> &rarr; <em>Properties</em> &rarr; check <strong>☑️ Unblock</strong> &rarr; <em>OK</em> (or click <em>More info &rarr; Run anyway</em>).
+      </div>
+    </section>
+
+    <!-- DESKTOP APP PREVIEW MOCKUP -->
+    <div class="mockup-wrapper">
+      <div class="mockup-bar">
+        <div class="mockup-dots">
+          <span class="mockup-dot dot-1"></span>
+          <span class="mockup-dot dot-2"></span>
+          <span class="mockup-dot dot-3"></span>
+        </div>
+        <span class="mockup-title">CryptoVault v1.0.0 — Authenticated SQLite WAL [Active]</span>
+        <span style="font-size: 0.74rem; color: #34d399; font-family: var(--font-code); font-weight: 600;">● PROTECTED</span>
+      </div>
+
+      <div class="mockup-content">
+        <div class="mockup-sidebar">
+          <div>
+            <div class="mockup-nav-item active">🔑 Credentials</div>
+            <div class="mockup-nav-item">🔐 File Cipher</div>
+            <div class="mockup-nav-item">🔏 HMAC Signer</div>
+            <div class="mockup-nav-item">⚙️ Settings</div>
+          </div>
+          <div style="font-size: 0.72rem; color: #888888; font-family: var(--font-code);">
+            Local DB: vault.db<br>KDF: Argon2id (64 MiB)
+          </div>
+        </div>
+
+        <div class="mockup-main-view">
+          <div class="mockup-header-row">
+            <strong style="font-size: 1.05rem; color: #ffffff;">Stored Credentials (AES-256-GCM)</strong>
+            <button class="btn-exec" style="padding: 6px 14px; font-size: 0.78rem;">+ Add Credential</button>
+          </div>
+
+          <div class="mockup-item-card">
+            <div class="mockup-item-left">
+              <div class="mockup-avatar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              </div>
+              <div>
+                <strong style="color: #ffffff; font-size: 0.95rem;">github.com</strong>
+                <div style="font-size: 0.76rem; color: #94a3b8; font-family: var(--font-code);">tarunharitas &bull; Nonce: #7c4a11b9...</div>
+              </div>
+            </div>
+            <button class="mockup-btn-copy" onclick="mockCopy(this)">Copy</button>
+          </div>
+
+          <div class="mockup-item-card">
+            <div class="mockup-item-left">
+              <div class="mockup-avatar" style="color: #34d399;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/></svg>
+              </div>
+              <div>
+                <strong style="color: #ffffff; font-size: 0.95rem;">aws.production-api</strong>
+                <div style="font-size: 0.76rem; color: #94a3b8; font-family: var(--font-code);">root-ops &bull; Argon2id 3 iters</div>
+              </div>
+            </div>
+            <button class="mockup-btn-copy copied" onclick="mockCopy(this)">Copied</button>
+          </div>
+
+          <div class="mockup-item-card">
+            <div class="mockup-item-left">
+              <div class="mockup-avatar" style="color: #c084fc;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </div>
+              <div>
+                <strong style="color: #ffffff; font-size: 0.95rem;">proton.me (Primary Encrypted Mail)</strong>
+                <div style="font-size: 0.76rem; color: #94a3b8; font-family: var(--font-code);">tarun-sec@proton.me</div>
+              </div>
+            </div>
+            <button class="mockup-btn-copy" onclick="mockCopy(this)">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BENTO FEATURES -->
+    <div id="features" class="section-head">
+      <div class="section-eyebrow">Cryptographic Architecture</div>
+      <h2 class="section-title">Zero Trust. Maximum Hardening.</h2>
+      <p class="section-desc">Designed to withstand GPU brute-force clusters, offline SQLite tampering, and memory side-channels.</p>
+    </div>
+
+    <div class="bento-grid">
+      <div class="bento-card col-2">
+        <div>
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg>
+          </div>
+          <h3>Argon2id Memory-Hard Key Derivation</h3>
+          <p>Configured with 64 MiB of memory, 3 iterations, and 4 threads to make password cracking economically unfeasible for GPU rigs and ASICs.</p>
+        </div>
+        <div class="metric-pill-box">
+          <span>Memory: 64 MiB RAM</span>
+          <span>Parallelism: 4 Threads</span>
+          <span style="color: var(--accent-emerald); font-weight: 600;">ASIC Immune</span>
+        </div>
+      </div>
+
+      <div class="bento-card">
+        <div>
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>AES-256-GCM + AAD v2</h3>
+          <p>Length-prefixed binary Authenticated Associated Data binds usernames directly to the ciphertext tag, preventing record splicing attacks.</p>
+        </div>
+        <div class="metric-pill-box">
+          <span>Fresh 12-byte CSPRNG Nonce</span>
+        </div>
+      </div>
+
+      <div class="bento-card">
+        <div>
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <h3>100% Offline SQLite WAL</h3>
+          <p>Zero telemetry or cloud syncing. Data remains strictly on your local disk with atomic ACID rollback transactions.</p>
+        </div>
+        <div class="metric-pill-box">
+          <span>PRAGMA journal_mode = WAL</span>
+        </div>
+      </div>
+
+      <div class="bento-card col-2">
+        <div>
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h3>Streaming HMAC-SHA256 Integrity Verification</h3>
+          <p>Authenticates files of any size in streaming 64 KiB chunks. Verifies manifests using constant-time equality checks to eliminate timing side-channel exploits.</p>
+        </div>
+        <div class="metric-pill-box">
+          <span>Constant-time comparison: <code>hmac.compare_digest()</code></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAYGROUND SIMULATOR -->
+    <div id="simulator" class="section-head">
+      <div class="section-eyebrow">Interactive Cryptography</div>
+      <h2 class="section-title">Live Cryptographic Sandbox</h2>
+      <p class="section-desc">Run real WebCrypto operations locally in your browser. Test key derivation, encryption, and simulate bit-flip tamper detection.</p>
+    </div>
+
+    <div class="playground-box">
+      <p class="section-desc" style="margin: 0 0 18px;">⚠️ Educational browser sandbox: do not enter real passwords, API keys, or production secrets.</p>
+      <div class="play-tabs">
+        <button class="play-tab-btn active" onclick="switchTab(this, 'tab-aead')">⚡ Live AES-256-GCM &amp; Bit-Flip Attack</button>
+        <button class="play-tab-btn" onclick="switchTab(this, 'tab-pass')">🎲 Precision Password Studio</button>
+      </div>
+
+      <!-- TAB 1: AEAD -->
+      <div id="tab-aead" class="play-pane active">
+        <div class="form-row">
+          <div>
+            <label class="input-label">Secret Payload to Encrypt</label>
+            <input type="text" id="sim-secret" class="input-box" value="DemoSecret_NotForProduction">
+          </div>
+          <div>
+            <label class="input-label">Master Passphrase</label>
+            <input type="password" id="sim-pass" class="input-box" value="DemoPassphrase_Only">
+          </div>
+        </div>
+
+        <div class="action-button-group">
+          <button class="btn-exec" id="btn-do-encrypt" onclick="runEncryption()">🔒 Encrypt with AES-256-GCM</button>
+          <button class="btn-attack" id="btn-do-tamper" onclick="tamperOneBit()" disabled>⚠️ Inject 1-Bit Tamper</button>
+          <button class="btn-verify" id="btn-do-decrypt" onclick="verifyDecryption()" disabled>🔓 Verify &amp; Decrypt</button>
+        </div>
+
+        <div class="console-box">
+          <div class="console-row">
+            <span class="console-key">Salt (16 Bytes / 128-bit):</span>
+            <span class="console-val" id="hex-salt">--</span>
+          </div>
+          <div class="console-row">
+            <span class="console-key">Nonce (12 Bytes / 96-bit):</span>
+            <span class="console-val" id="hex-nonce">--</span>
+          </div>
+          <div class="console-row">
+            <span class="console-key">Ciphertext:</span>
+            <span class="console-val" id="hex-ct">--</span>
+          </div>
+          <div class="console-row">
+            <span class="console-key">GCM Auth Tag (16 Bytes):</span>
+            <span class="console-val" id="hex-tag">--</span>
+          </div>
+          <div class="console-row" style="padding-top: 12px;">
+            <span class="console-key">Status:</span>
+            <span class="console-val" id="sim-status" style="color: #94a3b8;">Click 'Encrypt with AES-256-GCM' to run the pipeline.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: PASSWORD STUDIO -->
+      <div id="tab-pass" class="play-pane">
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: 600; color: #ffffff;">Length: <span id="pwd-len-num" style="color: #38bdf8;">28</span></span>
+          </div>
+          <input type="range" id="pwd-len-slider" min="8" max="64" value="28" style="width: 100%; accent-color: #f5f5f3; cursor: pointer;" oninput="updatePasswordLen(this.value)">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+          <input type="text" id="gen-pwd-output" class="input-box" readonly style="font-family: var(--font-code); font-size: 1.05rem; letter-spacing: 0.05em;">
+          <button class="btn-exec" onclick="generateRandomPassword()">Reroll</button>
+          <button class="btn-exec" style="background: #2a2a2c; color: #fff;" onclick="copyPassword(this)">Copy</button>
+        </div>
+
+        <div style="background: #09090a; padding: 14px 18px; border-radius: 12px; border: 1px solid #29292b; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #949498; font-size: 0.88rem;">Calculated Shannon Entropy:</span>
+          <strong id="entropy-text" style="color: #34d399; font-family: var(--font-code);">184 bits &bull; Hardened</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div>&copy; 2026 CryptoVault Project &bull; Open Source under MIT License.</div>
+      <div>
+        <a href="https://github.com/tarunharitas/crypto-vault" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="CryptoVault.exe" download="CryptoVault.exe">Download .exe</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // Tab switching
+    function switchTab(btn, paneId) {
+      document.querySelectorAll('.play-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.play-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(paneId).classList.add('active');
+    }
+
+    // Helper: Buffer to Hex
+    function buf2hex(buffer) {
+      return [...new Uint8Array(buffer)].map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+
+    let currentCipher = null;
+
+    async function runEncryption() {
+      const secret = document.getElementById('sim-secret').value;
+      const passphrase = document.getElementById('sim-pass').value;
+      if (!secret || !passphrase) { alert('Please enter a secret and a passphrase.'); return; }
+
+      const enc = new TextEncoder();
+      const salt = window.crypto.getRandomValues(new Uint8Array(16));
+      const nonce = window.crypto.getRandomValues(new Uint8Array(12));
+
+      const baseKey = await window.crypto.subtle.importKey(
+        'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+      );
+
+      const aesKey = await window.crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+        baseKey, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+      );
+
+      const ctBuffer = await window.crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: nonce }, aesKey, enc.encode(secret)
+      );
+
+      const bytes = new Uint8Array(ctBuffer);
+      const tag = bytes.slice(-16);
+      const ct = bytes.slice(0, -16);
+
+      currentCipher = { salt, nonce, fullCiphertext: bytes };
+
+      document.getElementById('hex-salt').textContent = buf2hex(salt);
+      document.getElementById('hex-nonce').textContent = buf2hex(nonce);
+      document.getElementById('hex-ct').textContent = buf2hex(ct);
+      document.getElementById('hex-tag').textContent = buf2hex(tag);
+      document.getElementById('hex-tag').style.color = '#fff';
+
+      const st = document.getElementById('sim-status');
+      st.textContent = '✓ AES-256-GCM Encryption Complete. Auth Tag Generated.';
+      st.style.color = '#34d399';
+
+      document.getElementById('btn-do-tamper').disabled = false;
+      document.getElementById('btn-do-decrypt').disabled = false;
+    }
+
+    function tamperOneBit() {
+      if (!currentCipher) return;
+      currentCipher.fullCiphertext[currentCipher.fullCiphertext.length - 1] ^= 0x01;
+      const tamperedTag = currentCipher.fullCiphertext.slice(-16);
+      const tagEl = document.getElementById('hex-tag');
+      tagEl.textContent = buf2hex(tamperedTag) + ' (TAMPERED - 1 BIT FLIPPED)';
+      tagEl.style.color = '#f87171';
+
+      const st = document.getElementById('sim-status');
+      st.textContent = '⚠️ 1-Bit Tamper Injected into Auth Tag. Click "Verify & Decrypt" to test.';
+      st.style.color = '#f87171';
+    }
+
+    async function verifyDecryption() {
+      if (!currentCipher) return;
+      const passphrase = document.getElementById('sim-pass').value;
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
+      const st = document.getElementById('sim-status');
+
+      try {
+        const baseKey = await window.crypto.subtle.importKey(
+          'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+        );
+        const aesKey = await window.crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt: currentCipher.salt, iterations: 100000, hash: 'SHA-256' },
+          baseKey, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+        );
+
+        const decrypted = await window.crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: currentCipher.nonce }, aesKey, currentCipher.fullCiphertext
+        );
+
+        st.textContent = '🛡️ AUTHENTICATED: Decrypted plaintext = "' + dec.decode(decrypted) + '"';
+        st.style.color = '#34d399';
+        document.getElementById('hex-tag').style.color = '#fff';
+      } catch (err) {
+        st.textContent = '❌ AUTHENTICATION REJECTED: GCM Tag Mismatch! Tampered data prevented decryption.';
+        st.style.color = '#f87171';
+      }
+    }
+
+    // Password generator
+    function updatePasswordLen(val) {
+      document.getElementById('pwd-len-num').textContent = val;
+      generateRandomPassword();
+    }
+
+    function generateRandomPassword() {
+      const len = parseInt(document.getElementById('pwd-len-slider').value, 10);
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+      const rand = new Uint32Array(len);
+      window.crypto.getRandomValues(rand);
+      let pwd = "";
+      for (let i = 0; i < len; i++) {
+        pwd += chars[rand[i] % chars.length];
+      }
+      document.getElementById('gen-pwd-output').value = pwd;
+      const entropy = Math.round(len * Math.log2(chars.length));
+      document.getElementById('entropy-text').textContent = entropy + ' bits • ' + (entropy > 90 ? 'High estimated entropy' : 'Estimated entropy');
+    }
+
+    function copyPassword(btn) {
+      const p = document.getElementById('gen-pwd-output').value;
+      navigator.clipboard.writeText(p).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 1800);
+      });
+    }
+
+    function mockCopy(btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1800);
+    }
+
+    generateRandomPassword();
+  </script>
+
+  <script>
+    // Scroll progress bar and scroll reveal animations
+    const productProgress = document.querySelector('.page-progress');
+    const paintProgress = () => {
+      const h = document.documentElement.scrollHeight - innerHeight;
+      productProgress.style.width = (h ? (scrollY / h) * 100 : 0) + '%';
+    };
+    addEventListener('scroll', paintProgress, { passive: true });
+    paintProgress();
+
+    const productObserver = new IntersectionObserver(items => {
+      items.forEach(item => {
+        if (item.isIntersecting) {
+          item.target.classList.add('visible');
+          productObserver.unobserve(item.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.section-head, .bento-card, .playground-box, .mockup-wrapper').forEach((el, i) => {
+      el.classList.add('reveal-product');
+      el.style.transitionDelay = (i % 3) * 55 + 'ms';
+      productObserver.observe(el);
+    });
+  </script>
+
+</body>
+</html>
